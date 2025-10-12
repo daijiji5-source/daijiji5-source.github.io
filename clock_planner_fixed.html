@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clock Planner v6</title>
+<style>
+  :root{
+    --bg:#0d1015; --fg:#e8e8eb; --muted:#a7adba;
+    --face:#0d1015; --ring:#222834; --tickMajor:#3a4150; --tickMinor:#262c37;
+    --handH:#ffffff; --handM:#e2e5ea; --handS:#4da3ff; --accent:#4da3ff;
+    --arcShadow: drop-shadow(0 2px 3px rgba(0,0,0,.4));
+  }
+  .theme-minimal{}
+  .theme-classic{
+    --bg:#f1f2f6; --fg:#1b1f28; --muted:#5a6477;
+    --face:#f7f8fb; --ring:#cfd6e3; --tickMajor:#7e8aa1; --tickMinor:#b6bfce;
+    --handH:#1b1f28; --handM:#2b3240; --handS:#d1382f; --accent:#2b7cff;
+  }
+  .theme-neon{
+    --bg:#0a0b10; --fg:#eaf2ff; --muted:#8aa7ff;
+    --face:#0a0b10; --ring:#162036; --tickMajor:#1e2a4a; --tickMinor:#121a30;
+    --handH:#eaf2ff; --handM:#b7c7ff; --handS:#00eaff; --accent:#7b5cff;
+    --arcShadow: drop-shadow(0 0 8px rgba(123,92,255,.75)) drop-shadow(0 0 14px rgba(0,234,255,.45));
+  }
+  .theme-paper{
+    --bg:#faf7f0; --fg:#2c2a25; --muted:#6f6a5e;
+    --face:#fffaf0; --ring:#e7ddc5; --tickMajor:#b9ac8e; --tickMinor:#d9cfb7;
+    --handH:#2c2a25; --handM:#444136; --handS:#b76e79; --accent:#b76e79;
+  }
+  .theme-glass{
+    --bg:#0b0f14; --fg:#e7f2ff; --muted:#9fb7d6;
+    --face:rgba(255,255,255,.06); --ring:#2a3544; --tickMajor:#3b4a61; --tickMinor:#253042;
+    --handH:#e7f2ff; --handM:#bcd4f3; --handS:#79c2ff; --accent:#79c2ff;
+    backdrop-filter: blur(8px);
+  }
+  .theme-pudding{
+    --bg:#fef6e4; --fg:#5a4a2f; --muted:#a89268;
+    --face:#fff9ea; --ring:#e6d5a8; --tickMajor:#d4b77a; --tickMinor:#e8ddb8;
+    --handH:#5a4a2f; --handM:#7a6a4f; --handS:#d4a574; --accent:#d4a574;
+  }
+  .theme-metal{
+    --bg:#1a1d23; --fg:#e4e7ec; --muted:#8a909d;
+    --face:#2a2d35; --ring:#3f454f; --tickMajor:#5a616e; --tickMinor:#434952;
+    --handH:#e4e7ec; --handM:#c5c9d1; --handS:#4db8ff; --accent:#4db8ff;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow-x:hidden;
+  }
+  header{padding:12px; border-bottom:1px solid var(--ring)}
+  header h1{margin:0; font-size:18px; font-weight:700}
+  .tabs{display:flex; gap:4px; padding:8px 12px; background:rgba(0,0,0,.1); flex-wrap:wrap}
+  .tab{padding:10px 16px; cursor:pointer; border-radius:8px; background:transparent; color:var(--muted); transition:.2s; border:none; font-size:14px}
+  .tab.active{background:var(--accent); color:#fff}
+  .tab-content{display:none; padding:12px}
+  .tab-content.active{display:block}
+  main{max-width:1200px; margin:0 auto}
+
+  .card{background:rgba(255,255,255,.04); border:1px solid var(--ring); border-radius:14px; padding:16px; margin-bottom:12px}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px}
+  select,input[type="time"],input[type="text"],input[type="color"],input[type="number"]{
+    background:rgba(0,0,0,.3); color:var(--fg); border:1px solid var(--ring); border-radius:8px; padding:8px; font-size:14px;
+  }
+  button{appearance:none; border:none; border-radius:8px; padding:8px 12px; font-size:13px; color:#fff; background:var(--accent); cursor:pointer; transition:.2s}
+  button:hover{opacity:.85}
+  button.ghost{background:transparent; color:var(--fg); border:1px solid var(--ring)}
+  button.danger{background:#e74c3c}
+  .list{display:flex; flex-direction:column; gap:8px; max-height:300px; overflow:auto}
+  .item{display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,.2); border:1px solid var(--ring); border-radius:10px; padding:10px}
+  .badge{width:14px; height:14px; border-radius:50%; flex-shrink:0}
+  .tiny{font-size:12px; color:var(--muted)}
+  .clock-wrap{display:flex; align-items:center; justify-content:center; padding:20px; position:relative; flex-direction:column}
+  svg{max-width:500px; width:100%; height:auto; display:block; touch-action:none}
+  .drag-hint{position:absolute; bottom:30px; background:var(--accent); color:#fff; padding:10px 16px; border-radius:8px; font-size:18px; font-weight:700; pointer-events:none; opacity:0; transition:.2s}
+  .drag-hint.show{opacity:1}
+  
+  .timer-item{background:rgba(0,0,0,.2); border:1px solid var(--ring); border-radius:10px; padding:16px; margin-bottom:8px}
+  .timer-display{font-size:48px; font-weight:700; text-align:center; margin:16px 0; font-family:monospace}
+  .timer-gauge{width:100%; height:10px; background:rgba(0,0,0,.3); border-radius:10px; overflow:hidden; margin:12px 0; position:relative}
+  .timer-gauge-fill{height:100%; transition:width .3s linear; position:absolute; left:0; top:0}
+  .timer-btns{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
+  
+  .sw-item{background:rgba(0,0,0,.2); border:1px solid var(--ring); border-radius:10px; padding:16px; margin-bottom:8px}
+  .sw-time{font-size:32px; font-weight:700; text-align:center; margin:8px 0; font-family:monospace}
+  .sw-btns{display:flex; gap:8px; justify-content:center; margin-top:12px}
+  
+  .status-bar{background:rgba(0,0,0,.3); border:1px solid var(--ring); border-radius:10px; padding:12px; margin-top:12px; text-align:center; font-size:16px; font-weight:700; font-family:monospace}
+  
+  @keyframes pulse{0%,100%{transform:scale(1)} 50%{transform:scale(1.05)}}
+  @keyframes shake{0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)}}
+  .alert{animation:pulse .5s ease-in-out 4}
+  .notification{position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:#fff; padding:16px 32px; border-radius:12px; font-weight:700; z-index:1000; box-shadow:0 4px 20px rgba(0,0,0,.3); animation:shake .5s}
+  
+  .study-panel{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+  .study-stat{background:rgba(0,0,0,.2); border:1px solid var(--ring); border-radius:10px; padding:12px; text-align:center}
+  .study-stat-value{font-size:28px; font-weight:700; color:var(--accent); margin:4px 0}
+  .study-stat-label{font-size:11px; color:var(--muted)}
+  
+  .page-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(60px, 1fr)); gap:6px; margin-top:12px; max-height:300px; overflow:auto; padding:4px}
+  .page-btn{padding:12px 8px; background:rgba(0,0,0,.2); border:1px solid var(--ring); border-radius:8px; cursor:pointer; transition:.2s; text-align:center; font-size:13px}
+  .page-btn:hover{background:rgba(0,0,0,.4)}
+  .page-btn.completed{background:var(--accent); color:#fff; border-color:var(--accent)}
+  
+  .timeline-container{position:relative; width:100%; height:120px; background:rgba(0,0,0,.3); border:1px solid var(--ring); border-radius:10px; overflow:hidden; margin-top:12px}
+  .timeline-scroll{position:relative; width:100%; height:100%; overflow-x:auto; scroll-behavior:smooth}
+  
+  .hp-bar-container{
+    width:100%; max-width:400px; margin:16px auto; display:none;
+  }
+  .hp-bar-container.active{display:block}
+  .hp-bar-outer{
+    width:100%; height:40px; background:rgba(0,0,0,.5); border:3px solid #2a5;
+    border-radius:20px; overflow:hidden; position:relative;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,.6), 0 0 20px rgba(42,170,85,.4);
+  }
+  .hp-bar-bg{
+    position:absolute; width:100%; height:100%;
+    background: linear-gradient(180deg, rgba(255,255,255,.1) 0%, transparent 50%, rgba(0,0,0,.2) 100%);
+  }
+  .hp-bar-fill{
+    position:absolute; height:100%; transition:width .5s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(90deg, #2a5 0%, #3c7 50%, #2a5 100%);
+    box-shadow: inset 0 2px 4px rgba(255,255,255,.3), 0 0 15px rgba(42,170,85,.8);
+  }
+  .hp-bar-afterglow{
+    position:absolute; height:100%; transition:all .8s ease-out; opacity:0;
+    background: linear-gradient(90deg, transparent, #6f8);
+    pointer-events:none;
+  }
+  .hp-bar-shine{
+    position:absolute; height:100%; width:200%; top:0; left:-200%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+    animation: shine 3s infinite;
+  }
+  @keyframes shine{
+    0%{left:-200%}
+    50%{left:100%}
+    100%{left:100%}
+  }
+  @keyframes hpShake{
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-4px)}
+    50%{transform:translateX(4px)}
+    75%{transform:translateX(-2px)}
+  }
+  .hp-bar-container.hit{animation:hpShake .4s}
+  .hp-bar-label{
+    text-align:center; margin-top:8px; font-weight:700; font-size:14px;
+    text-shadow: 0 0 10px rgba(42,170,85,.8);
+  }
+  
+  .page-complete-btn{
+    margin:16px auto; padding:20px 40px; font-size:20px; font-weight:700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border:none; border-radius:16px; color:#fff; cursor:pointer;
+    box-shadow: 0 8px 24px rgba(102,126,234,.4); transition:.3s; display:none;
+  }
+  .page-complete-btn.active{display:block}
+  .page-complete-btn:hover{transform:translateY(-2px); box-shadow: 0 12px 32px rgba(102,126,234,.6)}
+  .page-complete-btn:active{transform:translateY(0)}
+  
+  @media(max-width:600px){
+    .study-panel{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body class="theme-minimal">
+  <header>
+    <h1>🕐 Clock Planner v6</h1>
+  </header>
+  
+  <div class="tabs">
+    <button class="tab active" data-tab="planner">📅 プランナー</button>
+    <button class="tab" data-tab="timer">⏲️ タイマー</button>
+    <button class="tab" data-tab="stopwatch">⏱️ ストップウォッチ</button>
+    <button class="tab" data-tab="timeline">📊 タイムライン</button>
+    <button class="tab" data-tab="digital">🔢 デジタル</button>
+    <button class="tab" data-tab="study">📚 勉強管理</button>
+  </div>
+
+  <main>
+    <div class="tab-content active" data-content="planner">
+      <div class="card">
+        <div class="hp-bar-container" id="hpBarContainer">
+          <div class="hp-bar-outer">
+            <div class="hp-bar-afterglow" id="hpAfterGlow"></div>
+            <div class="hp-bar-fill" id="hpBarFill">
+              <div class="hp-bar-shine"></div>
+            </div>
+            <div class="hp-bar-bg"></div>
+          </div>
+          <div class="hp-bar-label" id="hpLabel">残り: 100%</div>
+        </div>
+        
+        <button class="page-complete-btn" id="pageCompleteBtn">📖 ページ完了 (0/0)</button>
+        
+        <div class="clock-wrap">
+          <svg id="clock" viewBox="0 0 500 500">
+            <defs>
+              <filter id="shadow">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".3"/>
+              </filter>
+              <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:rgba(255,255,255,.3)"/>
+                <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <linearGradient id="arcGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" id="arcGradStart1"/>
+                <stop offset="100%" id="arcGradEnd1"/>
+              </linearGradient>
+              <linearGradient id="arcGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" id="arcGradStart2"/>
+                <stop offset="50%" id="arcGradMid2"/>
+                <stop offset="100%" id="arcGradEnd2"/>
+              </linearGradient>
+            </defs>
+            <circle cx="250" cy="250" r="235" fill="var(--face)" stroke="var(--ring)" stroke-width="2"/>
+            <g id="ticks"></g>
+            <g id="numbers"></g>
+            <g id="arcs"></g>
+            <g id="timerArcs"></g>
+            <g id="outerArcs1"></g>
+            <g id="outerArcs2"></g>
+            <g id="hands" filter="url(#shadow)">
+              <line id="hHand" x1="250" y1="250" x2="250" y2="110" stroke="var(--handH)" stroke-width="8" stroke-linecap="round"/>
+              <line id="mHand" x1="250" y1="250" x2="250" y2="65" stroke="var(--handM)" stroke-width="5" stroke-linecap="round"/>
+              <line id="sHand" x1="250" y1="250" x2="250" y2="50" stroke="var(--handS)" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <circle cx="250" cy="250" r="8" fill="var(--handS)"/>
+          </svg>
+          <div id="hint" class="drag-hint"></div>
+          <div id="info" class="tiny" style="margin-top:12px; min-height:20px"></div>
+        </div>
+        
+        <div id="statusBar" class="status-bar"></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <label>テーマ</label>
+          <select id="theme">
+            <option value="theme-minimal">Minimal</option>
+            <option value="theme-classic">Classic</option>
+            <option value="theme-neon">Neon</option>
+            <option value="theme-paper">Paper</option>
+            <option value="theme-glass">Glass</option>
+            <option value="theme-pudding">Pudding</option>
+            <option value="theme-metal">Metal</option>
+          </select>
+          <label>表示</label>
+          <select id="mode">
+            <option value="day">12時間</option>
+            <option value="hour">60分</option>
+          </select>
+          <label>スナップ</label>
+          <select id="snap">
+            <option value="1">1分</option>
+            <option value="5" selected>5分</option>
+            <option value="10">10分</option>
+            <option value="15">15分</option>
+          </select>
+        </div>
+        
+        <div class="row">
+          <label>針の動き</label>
+          <select id="motion">
+            <option value="smooth">スムーズ</option>
+            <option value="tick">カチカチ</option>
+          </select>
+          <label>形状</label>
+          <select id="shape">
+            <option value="arc">アーク</option>
+            <option value="wedge">三角</option>
+            <option value="bar">バー</option>
+            <option value="triangle">中央三角</option>
+          </select>
+          <label>見た目</label>
+          <select id="style">
+            <option value="solid">ソリッド</option>
+            <option value="glass">ガラス</option>
+            <option value="glow">グロー</option>
+            <option value="metal">メタル</option>
+            <option value="gradient">グラデーション</option>
+            <option value="rainbow">レインボー</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>開始</label>
+          <input id="start" type="time" value="09:00">
+          <label>終了</label>
+          <input id="end" type="time" value="10:00">
+          <input id="label" type="text" placeholder="ラベル" style="flex:1">
+          <input id="color" type="color" value="#4da3ff">
+          <button id="add">追加</button>
+        </div>
+
+        <div class="tiny">💡 タップ→長押しドラッグ→離して確定</div>
+        
+        <div style="margin:12px 0; display:flex; gap:8px; flex-wrap:wrap">
+          <button id="undo" class="ghost">↶ 元に戻す</button>
+          <button id="clear" class="ghost danger">🗑️ 全削除</button>
+          <button id="export" class="ghost">💾 保存</button>
+          <button id="import" class="ghost">📂 読込</button>
+          <input id="file" type="file" accept=".json" style="display:none">
+        </div>
+
+        <div class="tiny" style="margin-top:12px">📋 予定一覧</div>
+        <div id="list" class="list"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-content="timer">
+      <div class="card">
+        <button id="tAdd" style="width:100%">➕ タイマー追加</button>
+        <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--ring)">
+          <button id="pomo" class="ghost" style="width:100%">🍅 ポモドーロ開始</button>
+          <button id="pomoStop" class="ghost danger" style="width:100%; margin-top:8px; display:none">⏹️ ポモドーロ終了</button>
+          <div id="pomoInfo" class="tiny" style="text-align:center; margin-top:8px"></div>
+        </div>
+        <div id="timerList" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-content="stopwatch">
+      <div class="card">
+        <button id="swAdd" style="width:100%">➕ ストップウォッチ追加</button>
+        <div id="swList" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-content="timeline">
+      <div class="card">
+        <div class="row">
+          <label>表示範囲</label>
+          <select id="tlRange">
+            <option value="60">60分</option>
+            <option value="180">3時間</option>
+            <option value="360">6時間</option>
+            <option value="720">12時間</option>
+            <option value="1440">24時間</option>
+          </select>
+          <label>自動更新</label>
+          <select id="tlAuto">
+            <option value="0">なし</option>
+            <option value="1" selected>あり</option>
+          </select>
+        </div>
+        <div class="timeline-container">
+          <div class="timeline-scroll" id="tlWrap">
+            <canvas id="timeline" style="display:block"></canvas>
+          </div>
+        </div>
+        <div class="tiny" style="margin-top:8px">現在時刻を中心に予定を時系列表示</div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-content="digital">
+      <div class="card">
+        <div style="text-align:center">
+          <div id="digitalTime" style="font-size:72px; font-weight:700; font-family:monospace; margin:24px 0"></div>
+          <div id="digitalDate" style="font-size:24px; color:var(--muted); margin-bottom:24px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-content="study">
+      <div class="card">
+        <h3 style="margin:0 0 12px 0">📚 ワーク進捗管理</h3>
+        <div class="row">
+          <label>総ページ数</label>
+          <input id="studyTotal" type="number" min="1" value="20" style="width:80px">
+          <label>1ページあたり(分)</label>
+          <input id="studyPerPage" type="number" min="1" value="5" style="width:80px">
+          <button id="studyGenerate">📖 予定生成</button>
+        </div>
+        <div class="study-panel">
+          <div class="study-stat">
+            <div class="study-stat-label">総ページ数</div>
+            <div class="study-stat-value" id="statTotal">20</div>
+          </div>
+          <div class="study-stat">
+            <div class="study-stat-label">残りページ数</div>
+            <div class="study-stat-value" id="statRemain">20</div>
+          </div>
+          <div class="study-stat">
+            <div class="study-stat-label">進捗率</div>
+            <div class="study-stat-value" id="statProgress">0%</div>
+          </div>
+          <div class="study-stat">
+            <div class="study-stat-label">推定残り時間</div>
+            <div class="study-stat-value" id="statTime">100分</div>
+          </div>
+        </div>
+        <div class="tiny" style="margin-top:12px">💡 ページをクリックして完了マーク</div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 12px 0">📊 学習進捗(全ページ)</h3>
+        <div id="studyLog" class="page-grid"></div>
+      </div>
+    </div>
+  </main>
+
+<script>
+(()=>{
+  const svg = document.getElementById('clock');
+  const ticks = document.getElementById('ticks');
+  const numbers = document.getElementById('numbers');
+  const arcs = document.getElementById('arcs');
+  const outerArcs1 = document.getElementById('outerArcs1');
+  const outerArcs2 = document.getElementById('outerArcs2');
+  const timerArcs = document.getElementById('timerArcs');
+  const hHand = document.getElementById('hHand');
+  const mHand = document.getElementById('mHand');
+  const sHand = document.getElementById('sHand');
+  const hint = document.getElementById('hint');
+  const info = document.getElementById('info');
+  const statusBar = document.getElementById('statusBar');
+  const timeline = document.getElementById('timeline');
+  const tlWrap = document.getElementById('tlWrap');
+  
+  const $ = id => document.getElementById(id);
+  
+  let events = [];
+  let undo = [];
+  let drag = null;
+  let preview = null;
+  let timers = [];
+  let timerId = 0;
+  let timerInt = null;
+  let pomo = {active:false, phase:'work', cycle:0, timerId:null, breakEventIds:[]};
+  let sws = [];
+  let swId = 0;
+  let tlCtx = null;
+  let tlAnim = null;
+  let study = {total:20, completed:[], perPage:5, active:false, delayCheck:{}};
+  const studyColors = ['#4da3ff','#ff6b6b','#51cf66','#ffd43b','#a78bfa','#fb7185','#38bdf8','#fb923c'];
+  let autoClearInt = null;
+
+  init();
+
+  function init(){
+    loadData();
+    draw();
+    $('theme').value = localStorage.theme || 'theme-minimal';
+    setTheme($('theme').value);
+    $('mode').value = localStorage.mode || 'day';
+    $('motion').value = localStorage.motion || 'smooth';
+    $('shape').value = localStorage.shape || 'arc';
+    $('style').value = localStorage.style || 'solid';
+    
+    timeline.width = 3000;
+    timeline.height = 120;
+    tlCtx = timeline.getContext('2d');
+    
+    $('theme').onchange = e => setTheme(e.target.value);
+    $('mode').onchange = e => {localStorage.mode=e.target.value; draw()};
+    $('motion').onchange = e => localStorage.motion=e.target.value;
+    $('shape').onchange = e => {localStorage.shape=e.target.value; draw()};
+    $('style').onchange = e => {localStorage.style=e.target.value; draw()};
+    $('add').onclick = addEvent;
+    $('undo').onclick = ()=>{if(undo.length){events=JSON.parse(undo.pop()); save(); draw()}};
+    $('clear').onclick = ()=>{pushUndo(); events=[]; save(); draw()};
+    $('export').onclick = exportData;
+    $('import').onclick = ()=>$('file').click();
+    $('file').onchange = importData;
+    $('tAdd').onclick = addTimer;
+    $('pomo').onclick = togglePomo;
+    $('pomoStop').onclick = stopPomo;
+    $('swAdd').onclick = addSW;
+    $('studyGenerate').onclick = generateStudy;
+    $('pageCompleteBtn').onclick = completeNextPage;
+    
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        const content = document.querySelector(`[data-content="${t.dataset.tab}"]`);
+        content.classList.add('active');
+        if(t.dataset.tab === 'timeline') drawTimeline();
+        if(t.dataset.tab === 'study') updateStudyStats();
+      };
+    });
+    
+    svg.onpointerdown = onDown;
+    svg.onpointermove = onMove;
+    svg.onpointerup = onUp;
+    
+    tick();
+    if(!timerInt) timerInt = setInterval(tickTimer, 100);
+    if(!autoClearInt) autoClearInt = setInterval(autoClearPast, 60000);
+    updateStudyStats();
+    updateHPBar();
+  }
+
+  function tick(){
+    const mode = $('mode').value;
+    const motion = $('motion').value;
+    const now = new Date();
+    const ms = now.getMilliseconds();
+    const s = motion==='tick' ? now.getSeconds() : now.getSeconds() + ms/1000;
+    const m = motion==='tick' ? now.getMinutes() : now.getMinutes() + s/60;
+    const h = now.getHours()%12 + m/60;
+    
+    rot(sHand, s*6);
+    rot(mHand, m*6);
+    rot(hHand, h*30);
+    
+    if(mode==='day'){
+      hHand.style.opacity = 1;
+    }else{
+      hHand.style.opacity = 0.2;
+    }
+    
+    const cur = getCurrentEvent();
+    if(cur){
+      const rem = cur.end - cur.current;
+      info.textContent = `📌 ${cur.label} (残り${rem}分)`;
+      info.style.color = cur.color;
+    }else{
+      info.textContent = '';
+    }
+    
+    updateStatusBar();
+    checkStudyDelay();
+    
+    sws.forEach(sw=>{
+      if(sw.running){
+        const el = $(`sw${sw.id}`);
+        if(el){
+          const t = sw.elapsed + (Date.now()-sw.start)/1000;
+          el.textContent = fmtSW(t);
+        }
+      }
+    });
+    
+    updateDigital();
+    requestAnimationFrame(tick);
+  }
+
+  function updateStatusBar(){
+    const parts = [];
+    const runningTimers = timers.filter(t=>t.running);
+    if(runningTimers.length > 0){
+      const texts = runningTimers.map(t=>{
+        const m = Math.floor(Math.abs(t.remain)/60);
+        const s = Math.floor(Math.abs(t.remain)%60);
+        const sign = t.remain<0?'-':'';
+        return `⏲️ ${sign}${m}:${String(s).padStart(2,'0')}`;
+      });
+      parts.push(texts.join(' | '));
+    }
+    const runningSW = sws.filter(sw=>sw.running);
+    if(runningSW.length > 0){
+      const texts = runningSW.map(sw=>{
+        const t = sw.elapsed + (Date.now()-sw.start)/1000;
+        return `⏱️ ${fmtSW(t)}`;
+      });
+      parts.push(texts.join(' | '));
+    }
+    statusBar.textContent = parts.length > 0 ? parts.join('  ·  ') : '';
+    statusBar.style.display = parts.length > 0 ? 'block' : 'none';
+  }
+
+  function updateDigital(){
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    $('digitalTime').textContent = `${h}:${m}:${s}`;
+    const y = now.getFullYear();
+    const mo = String(now.getMonth()+1).padStart(2,'0');
+    const d = String(now.getDate()).padStart(2,'0');
+    const days = ['日','月','火','水','木','金','土'];
+    $('digitalDate').textContent = `${y}年${mo}月${d}日 (${days[now.getDay()]})`;
+  }
+
+  function rot(el,deg){
+    el.setAttribute('transform',`rotate(${deg} 250 250)`);
+  }
+
+  function draw(){
+    const mode = $('mode').value;
+    ticks.innerHTML = '';
+    numbers.innerHTML = '';
+    for(let i=0; i<60; i++){
+      const a = i/60*2*Math.PI - Math.PI/2;
+      const r1 = i%5===0 ? 205 : 220;
+      const r2 = i%5===0 ? 232 : 236;
+      const p1 = pol(r1, a);
+      const p2 = pol(r2, a);
+      const l = mk('line');
+      l.setAttribute('x1',p1.x); l.setAttribute('y1',p1.y);
+      l.setAttribute('x2',p2.x); l.setAttribute('y2',p2.y);
+      l.setAttribute('stroke', i%5===0?css('--tickMajor'):css('--tickMinor'));
+      l.setAttribute('stroke-width', i%5===0?2:1);
+      ticks.appendChild(l);
+    }
+    
+    if(mode==='day'){
+      for(let i=1; i<=12; i++){
+        const a = i/12*2*Math.PI - Math.PI/2;
+        const p = pol(185, a);
+        const t = mk('text');
+        t.setAttribute('x',p.x); t.setAttribute('y',p.y);
+        t.setAttribute('fill',css('--muted'));
+        t.setAttribute('font-size','20'); t.setAttribute('font-weight','700');
+        t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','middle');
+        t.textContent = i;
+        numbers.appendChild(t);
+      }
+    }else{
+      for(let i=5; i<=60; i+=5){
+        const a = i/60*2*Math.PI - Math.PI/2;
+        const p = pol(185, a);
+        const t = mk('text');
+        t.setAttribute('x',p.x); t.setAttribute('y',p.y);
+        t.setAttribute('fill',css('--muted'));
+        t.setAttribute('font-size','18'); t.setAttribute('font-weight','700');
+        t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','middle');
+        t.textContent = i===60?'0':i;
+        numbers.appendChild(t);
+      }
+    }
+    
+    arcs.innerHTML = '';
+    outerArcs1.innerHTML = '';
+    outerArcs2.innerHTML = '';
+    const shape = $('shape').value;
+    const style = $('style').value;
+    const now = new Date();
+    
+    events.forEach(ev=>{
+      if(ev.mode !== mode) return;
+      
+      let radius = 200;
+      let opacity = 0.9;
+      let layer = 'inner';
+      
+      if(mode === 'hour'){
+        const nowMin = now.getMinutes();
+        const nowSec = now.getSeconds();
+        const currentExactMin = nowMin + nowSec/60;
+        
+        // フォームから入力された予定で「次の時間帯」フラグがある場合は外側
+        if(ev.isNextHour){
+          radius = 242;
+          opacity = 0.7;
+          layer = 'outer1';
+        }
+        // 現在進行中のイベント: 開始が現在以前で、終了が現在より後
+        else if(ev.start <= currentExactMin && ev.end > currentExactMin){
+          radius = 200;
+          opacity = 0.9;
+          layer = 'inner';
+        }
+        // 今の時間帯の未来のイベント: 開始が現在より後
+        else if(ev.start > currentExactMin){
+          radius = 200;
+          opacity = 0.9;
+          layer = 'inner';
+        }
+        // それ以外（過去）は外側
+        else{
+          radius = 242;
+          opacity = 0.7;
+          layer = 'outer1';
+        }
+      }else if(mode === 'day'){
+        const currentMin = (now.getHours()%12)*60 + now.getMinutes() + now.getSeconds()/60;
+        const isCurrentEvent = ev.start <= currentMin && ev.end > currentMin;
+        const isUpcoming = ev.start > currentMin && ev.start < currentMin + 120;
+        
+        if(isCurrentEvent || isUpcoming){
+          radius = 200;
+          opacity = 0.9;
+          layer = 'inner';
+        }else{
+          radius = 200;
+          opacity = 0.9;
+          layer = 'inner';
+        }
+      }
+      
+      const a1 = minToAng(ev.start, mode);
+      const a2 = minToAng(ev.end, mode);
+      drawArc(a1, a2, ev.color, shape, style, radius, opacity, layer);
+    });
+    
+    renderList();
+    drawTimerArcs();
+  }
+
+  function drawArc(a1,a2,col,shape,style,radius=200,opacity=0.9,layer='inner'){
+    while(a2<a1) a2+=2*Math.PI;
+    if(a2-a1<=0) return;
+    if(a2-a1>2*Math.PI) a2=a1+2*Math.PI;
+    
+    const p = mk('path');
+    const strokeWidth = layer==='inner' ? 24 : (layer==='outer1' ? 12 : 10);
+    p.setAttribute('d', arcPath(radius, a1, a2, shape, strokeWidth));
+    
+    if(shape==='bar'||shape==='wedge'||shape==='triangle'){
+      if(style==='gradient'){
+        p.setAttribute('fill',`url(#arcGrad1)`);
+        const c1 = col;
+        const c2 = lightenColor(col, 30);
+        $('arcGradStart1').setAttribute('style', `stop-color:${c1}`);
+        $('arcGradEnd1').setAttribute('style', `stop-color:${c2}`);
+      }else if(style==='rainbow'){
+        p.setAttribute('fill',`url(#arcGrad2)`);
+        $('arcGradStart2').setAttribute('style', `stop-color:#ff6b6b`);
+        $('arcGradMid2').setAttribute('style', `stop-color:#4da3ff`);
+        $('arcGradEnd2').setAttribute('style', `stop-color:#51cf66`);
+      }else{
+        p.setAttribute('fill',col);
+      }
+      p.setAttribute('stroke','none');
+    }else{
+      if(style==='gradient'){
+        p.setAttribute('stroke',`url(#arcGrad1)`);
+        const c1 = col;
+        const c2 = lightenColor(col, 30);
+        $('arcGradStart1').setAttribute('style', `stop-color:${c1}`);
+        $('arcGradEnd1').setAttribute('style', `stop-color:${c2}`);
+      }else if(style==='rainbow'){
+        p.setAttribute('stroke',`url(#arcGrad2)`);
+        $('arcGradStart2').setAttribute('style', `stop-color:#ff6b6b`);
+        $('arcGradMid2').setAttribute('style', `stop-color:#4da3ff`);
+        $('arcGradEnd2').setAttribute('style', `stop-color:#51cf66`);
+      }else{
+        p.setAttribute('stroke',col);
+      }
+      p.setAttribute('stroke-width',String(strokeWidth));
+      p.setAttribute('fill','none');
+      p.setAttribute('stroke-linecap','round');
+    }
+    
+    if(style==='glass'){
+      p.setAttribute('opacity',String(opacity*0.5));
+      p.style.filter = 'url(#glassGrad)';
+    }else if(style==='glow'){
+      p.setAttribute('opacity',String(opacity));
+      p.style.filter = `drop-shadow(0 0 8px ${col}) drop-shadow(0 0 12px ${col})`;
+    }else if(style==='metal'){
+      p.setAttribute('opacity',String(opacity*0.85));
+      p.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,.5))';
+    }else{
+      p.setAttribute('opacity',String(opacity));
+    }
+    
+    if(layer==='outer1'){
+      outerArcs1.appendChild(p);
+    }else if(layer==='outer2'){
+      outerArcs2.appendChild(p);
+    }else{
+      arcs.appendChild(p);
+    }
+  }
+
+  function lightenColor(hex, percent){
+    const num = parseInt(hex.replace('#',''), 16);
+    const r = Math.min(255, ((num >> 16) & 255) + percent);
+    const g = Math.min(255, ((num >> 8) & 255) + percent);
+    const b = Math.min(255, (num & 255) + percent);
+    return `#${((r<<16)|(g<<8)|b).toString(16).padStart(6,'0')}`;
+  }
+
+  function arcPath(r,a1,a2,shape,strokeWidth=24){
+    const large = a2-a1>Math.PI?1:0;
+    const p1 = pol(r,a1);
+    const p2 = pol(r,a2);
+    if(shape==='wedge'){
+      return `M 250 250 L ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y} Z`;
+    }else if(shape==='triangle'){
+      const r1=150, r2=r;
+      const p1a=pol(r1,a1), p1b=pol(r2,a1);
+      const p2a=pol(r1,a2), p2b=pol(r2,a2);
+      return `M ${p1a.x} ${p1a.y} L ${p1b.x} ${p1b.y} A ${r2} ${r2} 0 ${large} 1 ${p2b.x} ${p2b.y} L ${p2a.x} ${p2a.y} A ${r1} ${r1} 0 ${large} 0 ${p1a.x} ${p1a.y} Z`;
+    }else if(shape==='bar'){
+      const r1=r-strokeWidth/2, r2=r+strokeWidth/2;
+      const p1a=pol(r1,a1), p1b=pol(r2,a1);
+      const p2a=pol(r1,a2), p2b=pol(r2,a2);
+      return `M ${p1a.x} ${p1a.y} L ${p1b.x} ${p1b.y} A ${r2} ${r2} 0 ${large} 1 ${p2b.x} ${p2b.y} L ${p2a.x} ${p2a.y} A ${r1} ${r1} 0 ${large} 0 ${p1a.x} ${p1a.y} Z`;
+    }else{
+      return `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y}`;
+    }
+  }
+
+  function minToAng(min, mode){
+    const total = mode==='day'?720:60;
+    return (min%total)/total*2*Math.PI - Math.PI/2;
+  }
+
+  function angToMin(ang, mode){
+    const total = mode==='day'?720:60;
+    let f = (ang+Math.PI/2)/(2*Math.PI);
+    f = (f%1+1)%1;
+    let m = Math.round(f*total);
+    const snap = parseInt($('snap').value);
+    m = Math.round(m/snap)*snap;
+    if(m>=total) m=0;
+    return m;
+  }
+
+  function pol(r,a){
+    return {x:250+r*Math.cos(a), y:250+r*Math.sin(a)};
+  }
+
+  function mk(tag){
+    return document.createElementNS('http://www.w3.org/2000/svg',tag);
+  }
+
+  function css(v){
+    return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  }
+
+  function onDown(e){
+    const p = local(e);
+    const a = Math.atan2(p.y-250, p.x-250);
+    const m = angToMin(a, $('mode').value);
+    drag = {start:m};
+    hint.textContent = fmtTime(m);
+    hint.classList.add('show');
+    svg.setPointerCapture(e.pointerId);
+  }
+
+  function onMove(e){
+    if(!drag) return;
+    const p = local(e);
+    const dist = Math.sqrt((p.x-250)**2+(p.y-250)**2);
+    if(dist<150 || dist>280) return;
+    const a = Math.atan2(p.y-250, p.x-250);
+    const m = angToMin(a, $('mode').value);
+    drag.end = m;
+    hint.textContent = fmtTime(m);
+    if(preview) preview.remove();
+    preview = mk('path');
+    const a1 = minToAng(drag.start, $('mode').value);
+    const a2 = minToAng(m, $('mode').value);
+    const shape = $('shape').value;
+    preview.setAttribute('d', arcPath(200, a1, a2, shape, 24));
+    if(shape==='bar'||shape==='wedge'||shape==='triangle'){
+      preview.setAttribute('fill',$('color').value);
+      preview.setAttribute('stroke','none');
+    }else{
+      preview.setAttribute('stroke',$('color').value);
+      preview.setAttribute('stroke-width','24');
+      preview.setAttribute('fill','none');
+    }
+    preview.setAttribute('opacity','0.6');
+    arcs.appendChild(preview);
+  }
+
+  function onUp(e){
+    if(!drag) return;
+    hint.classList.remove('show');
+    if(preview){preview.remove(); preview=null;}
+    if(drag.end !== undefined && drag.end !== drag.start){
+      pushUndo();
+      const mode = $('mode').value;
+      const now = new Date();
+      const currentMin = now.getMinutes();
+      
+      // ドラッグで作成した予定が現在時刻より前の場合、次の時間帯と判断
+      let isNextHour = false;
+      if(mode === 'hour' && drag.start < currentMin){
+        isNextHour = true;
+      }
+      
+      events.push({
+        mode: mode,
+        start: drag.start,
+        end: drag.end,
+        label: $('label').value.trim()||'予定',
+        color: $('color').value,
+        id: Date.now(),
+        isNextHour: mode === 'hour' ? isNextHour : undefined
+      });
+      save();
+      draw();
+      $('label').value = '';
+    }
+    drag = null;
+  }
+
+  function local(e){
+    const r = svg.getBoundingClientRect();
+    return {
+      x: (e.clientX-r.left)*(500/r.width),
+      y: (e.clientY-r.top)*(500/r.height)
+    };
+  }
+
+  function addEvent(){
+    const mode = $('mode').value;
+    const s = $('start').value.split(':').map(Number);
+    const e = $('end').value.split(':').map(Number);
+    if(s.length<2||e.length<2) return alert('時間を入力');
+    let sm = s[0]*60+s[1];
+    let em = e[0]*60+e[1];
+    
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    let isNextHour = false;
+    if(mode === 'hour'){
+      // 60分表記の場合、開始時刻の「時」が現在時刻より大きければ次の時間帯
+      if(s[0] > currentHour){
+        isNextHour = true;
+      }
+    }
+    
+    if(mode==='day'){sm%=720; em%=720;}
+    else{sm%=60; em%=60;}
+    
+    pushUndo();
+    events.push({
+      mode, start:sm, end:em,
+      label: $('label').value.trim()||'予定',
+      color: $('color').value,
+      id: Date.now(),
+      isNextHour: mode === 'hour' ? isNextHour : undefined
+    });
+    save();
+    draw();
+    $('label').value = '';
+  }
+
+  function autoClearPast(){
+    const mode = $('mode').value;
+    const now = new Date();
+    const cur = mode==='day' ? (now.getHours()%12)*60+now.getMinutes() : now.getMinutes();
+    const before = events.length;
+    events = events.filter(ev => {
+      if(ev.mode !== mode) return true;
+      if(ev.isStudy) return true;
+      if(ev.isBreak) return true;
+      return ev.end > cur;
+    });
+    if(events.length < before){
+      save();
+      draw();
+    }
+  }
+
+  function renderList(){
+    const mode = $('mode').value;
+    $('list').innerHTML = '';
+    events.forEach((ev,i)=>{
+      if(ev.mode!==mode) return;
+      if(ev.isBreak) return;
+      const div = document.createElement('div');
+      div.className = 'item';
+      const left = document.createElement('div');
+      left.style.display='flex'; left.style.gap='8px'; left.style.alignItems='center';
+      const badge = document.createElement('div');
+      badge.className='badge';
+      badge.style.background=ev.color;
+      const txt = document.createElement('div');
+      txt.textContent = ev.label;
+      left.appendChild(badge);
+      left.appendChild(txt);
+      const right = document.createElement('div');
+      right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+      const time = document.createElement('span');
+      time.className='tiny';
+      time.textContent = fmtTime(ev.start)+' – '+fmtTime(ev.end);
+      const del = document.createElement('button');
+      del.className='danger';
+      del.textContent='削除';
+      del.style.padding='4px 8px';
+      del.style.fontSize='12px';
+      del.onclick = ()=>{pushUndo(); events.splice(i,1); save(); draw()};
+      right.appendChild(time);
+      right.appendChild(del);
+      div.appendChild(left);
+      div.appendChild(right);
+      $('list').appendChild(div);
+    });
+  }
+
+  function fmtTime(m){
+    const mode = $('mode').value;
+    if(mode==='hour') return `${m}分`;
+    const h = Math.floor(m/60)||12;
+    const min = m%60;
+    return `${h}:${String(min).padStart(2,'0')}`;
+  }
+
+  function getCurrentEvent(){
+    const mode = $('mode').value;
+    const now = new Date();
+    const cur = mode==='day' ? (now.getHours()%12)*60+now.getMinutes() : now.getMinutes();
+    for(let ev of events){
+      if(ev.mode!==mode) continue;
+      let s=ev.start, e=ev.end;
+      if(e<s) e+= mode==='day'?720:60;
+      if(cur>=s && cur<e){
+        return {...ev, current:cur, end:e};
+      }
+    }
+    return null;
+  }
+
+  function setTheme(t){
+    document.body.className = t;
+    localStorage.theme = t;
+    draw();
+  }
+
+  function pushUndo(){
+    undo.push(JSON.stringify(events));
+    if(undo.length>20) undo.shift();
+  }
+
+  function save(){
+    localStorage.events = JSON.stringify(events);
+  }
+
+  function loadData(){
+    try{
+      events = JSON.parse(localStorage.events||'[]');
+      study = JSON.parse(localStorage.study||'{"total":20,"completed":[],"perPage":5,"active":false,"delayCheck":{}}');
+    }catch(e){
+      events = [];
+      study = {total:20, completed:[], perPage:5, active:false, delayCheck:{}};
+    }
+  }
+
+  function exportData(){
+    const blob = new Blob([JSON.stringify(events,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'clock_planner_v6.json';
+    a.click();
+  }
+
+  function importData(e){
+    const f = e.target.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        const d = JSON.parse(r.result);
+        if(Array.isArray(d)){
+          pushUndo();
+          events = d;
+          save();
+          draw();
+        }
+      }catch(err){alert('読込失敗')}
+    };
+    r.readAsText(f);
+  }
+
+  function addTimer(){
+    const now = new Date();
+    timers.push({
+      id:timerId++,
+      total:25*60,
+      remain:25*60,
+      running:false,
+      start:0,
+      alerted:false,
+      startMin:now.getMinutes(),
+      minutes:25,
+      gaugeColor:'#4da3ff',
+      clockMode:'outer'
+    });
+    renderTimers();
+  }
+
+  function renderTimers(){
+    $('timerList').innerHTML='';
+    timers.forEach((t,i)=>{
+      const div = document.createElement('div');
+      div.className='timer-item';
+      const controls = document.createElement('div');
+      controls.className='row';
+      controls.style.marginBottom='12px';
+      const minInput = document.createElement('input');
+      minInput.type='number'; minInput.min='1'; minInput.max='180';
+      minInput.value=t.minutes; minInput.style.width='80px';
+      minInput.onchange = (e)=>{
+        t.minutes = parseInt(e.target.value);
+        t.total = t.minutes*60;
+        if(!t.running) t.remain = t.total;
+        updateTimer(i);
+      };
+      const modeLabel = document.createElement('label');
+      modeLabel.textContent = '表示:'; modeLabel.style.marginLeft = '8px';
+      const modeSelect = document.createElement('select');
+      modeSelect.style.flex = '1';
+      modeSelect.innerHTML = '<option value="outer">外周</option><option value="direct">直接配置</option>';
+      modeSelect.value = t.clockMode || 'outer';
+      modeSelect.onchange = (e)=>{
+        t.clockMode = e.target.value;
+        drawTimerArcs();
+      };
+      const colorLabel = document.createElement('label');
+      colorLabel.textContent = '色:'; colorLabel.style.marginLeft = '8px';
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color'; colorInput.value = t.gaugeColor || '#4da3ff'; colorInput.style.width = '50px';
+      colorInput.onchange = (e)=>{
+        t.gaugeColor = e.target.value;
+        updateTimer(i);
+      };
+      controls.appendChild(minInput);
+      controls.appendChild(document.createTextNode(' 分'));
+      controls.appendChild(modeLabel);
+      controls.appendChild(modeSelect);
+      controls.appendChild(colorLabel);
+      controls.appendChild(colorInput);
+      const display = document.createElement('div');
+      display.className='timer-display'; display.id=`t${t.id}`; display.style.fontSize='36px';
+      const m = Math.floor(Math.abs(t.remain)/60);
+      const s = Math.floor(Math.abs(t.remain)%60);
+      const sign = t.remain<0?'-':'';
+      display.textContent = `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      const gauge = document.createElement('div');
+      gauge.className='timer-gauge';
+      const fill = document.createElement('div');
+      fill.className='timer-gauge-fill'; fill.id=`tf${t.id}`;
+      fill.style.background = t.gaugeColor || '#4da3ff';
+      const pct = t.total>0 ? Math.max(0,Math.min(100,t.remain/t.total*100)) : 0;
+      fill.style.width = pct+'%';
+      gauge.appendChild(fill);
+      const btns = document.createElement('div');
+      btns.className='timer-btns';
+      const startBtn = document.createElement('button');
+      startBtn.textContent = t.running?'⏸ 一時停止':'▶ 開始';
+      startBtn.onclick = ()=>t.running?pauseTimer(i):startTimer(i);
+      const resetBtn = document.createElement('button');
+      resetBtn.className='ghost'; resetBtn.textContent='↻ リセット';
+      resetBtn.onclick = ()=>resetTimer(i);
+      const stopBtn = document.createElement('button');
+      stopBtn.className='ghost danger'; stopBtn.textContent='■ 終了';
+      stopBtn.onclick = ()=>stopTimer(i);
+      const delBtn = document.createElement('button');
+      delBtn.className='ghost danger'; delBtn.textContent='🗑️ 削除';
+      delBtn.onclick = ()=>{timers.splice(i,1); renderTimers(); drawTimerArcs()};
+      btns.appendChild(startBtn);
+      btns.appendChild(resetBtn);
+      btns.appendChild(stopBtn);
+      btns.appendChild(delBtn);
+      div.appendChild(controls);
+      div.appendChild(display);
+      div.appendChild(gauge);
+      div.appendChild(btns);
+      $('timerList').appendChild(div);
+    });
+  }
+
+  function startTimer(i){
+    const t = timers[i];
+    if(t.running) return;
+    if(t.remain>0){
+      t.start = Date.now() - (t.total-t.remain)*1000;
+    }else{
+      t.total = t.minutes*60;
+      t.remain = t.total;
+      t.start = Date.now();
+      t.startMin = new Date().getMinutes();
+    }
+    t.running = true;
+    t.alerted = false;
+    renderTimers();
+  }
+
+  function pauseTimer(i){
+    timers[i].running = false;
+    renderTimers();
+  }
+
+  function resetTimer(i){
+    const t = timers[i];
+    t.total = t.minutes*60;
+    t.remain = t.total;
+    t.running = false;
+    t.alerted = false;
+    t.startMin = new Date().getMinutes();
+    updateTimer(i);
+    renderTimers();
+  }
+
+  function stopTimer(i){
+    const t = timers[i];
+    t.running = false;
+    t.total = 0;
+    t.remain = 0;
+    t.alerted = false;
+    updateTimer(i);
+    renderTimers();
+  }
+
+  function tickTimer(){
+    timers.forEach((t,i)=>{
+      if(t.running){
+        const elapsed = (Date.now()-t.start)/1000;
+        t.remain = t.total - elapsed;
+        updateTimer(i);
+        if(t.remain<=0 && !t.alerted){
+          t.alerted = true;
+          t.running = false;
+          t.remain = 0;
+          notify('⏰ タイマー終了!');
+          const el = $(`t${t.id}`);
+          if(el){
+            el.classList.add('alert');
+            setTimeout(()=>el.classList.remove('alert'),2000);
+          }
+          renderTimers();
+        }
+      }
+    });
+    if(pomo.active && pomo.timerId !== null){
+      const pt = timers.find(t=>t.id===pomo.timerId);
+      if(pt && !pt.running && pt.alerted){
+        setTimeout(()=>{
+          pt.alerted = false;
+          pomoNext();
+        }, 2000);
+      }
+    }
+  }
+
+  function updateTimer(i){
+    const t = timers[i];
+    const el = $(`t${t.id}`);
+    if(el){
+      const m = Math.floor(Math.abs(t.remain)/60);
+      const s = Math.floor(Math.abs(t.remain)%60);
+      const sign = t.remain<0?'-':'';
+      el.textContent = `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    const fill = $(`tf${t.id}`);
+    if(fill){
+      const pct = t.total>0 ? Math.max(0,Math.min(100,t.remain/t.total*100)) : 0;
+      fill.style.width = pct+'%';
+      fill.style.background = t.gaugeColor || '#4da3ff';
+    }
+    drawTimerArcs();
+  }
+
+  function drawTimerArcs(){
+    timerArcs.innerHTML='';
+    const mode = $('mode').value;
+    if(mode !== 'hour') return;
+    timers.forEach((t,idx)=>{
+      if(t.total===0) return;
+      const clockMode = t.clockMode || 'outer';
+      const pct = Math.max(0, t.remain/t.total);
+      const color = t.gaugeColor || '#4da3ff';
+      if(clockMode==='direct'){
+        const remainMin = t.remain/60;
+        const startMin = t.startMin || 0;
+        const endMin = (startMin + remainMin) % 60;
+        const startA = minToAng(startMin, 'hour');
+        const endA = minToAng(endMin, 'hour');
+        const p = mk('path');
+        p.setAttribute('d', arcPath(175, startA, endA, 'arc', 10));
+        p.setAttribute('stroke', color);
+        p.setAttribute('stroke-width', '10');
+        p.setAttribute('fill', 'none');
+        p.setAttribute('opacity', '0.9');
+        p.setAttribute('stroke-linecap', 'round');
+        timerArcs.appendChild(p);
+      }else{
+        const radius = 165 - (idx*12);
+        const a1 = -Math.PI/2;
+        const a2 = a1 + pct*2*Math.PI;
+        const p = mk('path');
+        p.setAttribute('d', arcPath(radius, a1, a2, 'arc', 8));
+        p.setAttribute('stroke', color);
+        p.setAttribute('stroke-width', '8');
+        p.setAttribute('fill', 'none');
+        p.setAttribute('opacity', '0.8');
+        p.setAttribute('stroke-linecap', 'round');
+        timerArcs.appendChild(p);
+      }
+    });
+  }
+
+  function togglePomo(){
+    if(pomo.active) return;
+    pomo.active = true;
+    pomo.phase = 'work';
+    pomo.cycle = 0;
+    pomo.breakEventIds = [];
+    $('pomoStop').style.display = 'block';
+    startPomoPhase();
+  }
+
+  function stopPomo(){
+    pomo.active = false;
+    pomo.phase = 'work';
+    pomo.cycle = 0;
+    $('pomo').textContent = '🍅 ポモドーロ開始';
+    $('pomoInfo').textContent = '';
+    $('pomoStop').style.display = 'none';
+    if(pomo.timerId !== null){
+      const pt = timers.find(t=>t.id===pomo.timerId);
+      if(pt){
+        const idx = timers.indexOf(pt);
+        stopTimer(idx);
+      }
+      pomo.timerId = null;
+    }
+    events = events.filter(ev => !pomo.breakEventIds.includes(ev.id));
+    pomo.breakEventIds = [];
+    save();
+    draw();
+  }
+
+  function startPomoPhase(){
+    const isWork = pomo.phase==='work';
+    const minutes = isWork ? 25 : 5;
+    const now = new Date();
+    const mode = $('mode').value;
+    let currentMin = mode === 'day' ? (now.getHours()%12)*60+now.getMinutes() : now.getMinutes();
+    const newTimer = {
+      id:timerId++,
+      total:minutes*60,
+      remain:minutes*60,
+      running:false,
+      start:0,
+      alerted:false,
+      startMin: mode === 'hour' ? now.getMinutes() : currentMin,
+      minutes:minutes,
+      clockMode:'direct',
+      gaugeColor: isWork ? '#ff6b6b' : '#51cf66'
+    };
+    timers.push(newTimer);
+    pomo.timerId = newTimer.id;
+    $('pomoInfo').textContent = isWork ? `🍅 作業 #${pomo.cycle+1}` : '☕ 休憩';
+    $('pomo').textContent = '🍅 ポモドーロ実行中';
+    if(isWork){
+      const breakStart = (currentMin + 25) % (mode==='day'?720:60);
+      const breakEnd = (breakStart + 5) % (mode==='day'?720:60);
+      const breakId = Date.now();
+      
+      // 60分表記で休憩が次の時間帯になる場合
+      let isNextHourBreak = false;
+      if(mode === 'hour' && (currentMin + 25) >= 60){
+        isNextHourBreak = true;
+      }
+      
+      events.push({
+        mode: mode,
+        start: breakStart,
+        end: breakEnd,
+        label: '☕ 休憩',
+        color: '#51cf66',
+        isBreak: true,
+        id: breakId,
+        isNextHour: isNextHourBreak
+      });
+      pomo.breakEventIds.push(breakId);
+      save();
+      draw();
+    }
+    renderTimers();
+    const idx = timers.length-1;
+    startTimer(idx);
+  }
+
+  function pomoNext(){
+    if(!pomo.active) return;
+    if(pomo.phase==='work'){
+      pomo.cycle++;
+      pomo.phase = 'break';
+    }else{
+      pomo.phase = 'work';
+    }
+    startPomoPhase();
+  }
+
+  function addSW(){
+    sws.push({id:swId++, elapsed:0, running:false, start:0});
+    renderSW();
+  }
+
+  function renderSW(){
+    $('swList').innerHTML='';
+    sws.forEach((sw,i)=>{
+      const div = document.createElement('div');
+      div.className='sw-item';
+      const time = document.createElement('div');
+      time.className='sw-time'; time.id=`sw${sw.id}`;
+      time.textContent = fmtSW(sw.elapsed);
+      const btns = document.createElement('div');
+      btns.className='sw-btns';
+      const start = document.createElement('button');
+      start.textContent = sw.running?'⏸ 停止':'▶ 開始';
+      start.onclick = ()=>toggleSW(i);
+      const reset = document.createElement('button');
+      reset.className='ghost'; reset.textContent='↻ リセット';
+      reset.onclick = ()=>resetSW(i);
+      const del = document.createElement('button');
+      del.className='ghost danger'; del.textContent='🗑️ 削除';
+      del.onclick = ()=>{sws.splice(i,1); renderSW()};
+      btns.appendChild(start);
+      btns.appendChild(reset);
+      btns.appendChild(del);
+      div.appendChild(time);
+      div.appendChild(btns);
+      $('swList').appendChild(div);
+    });
+  }
+
+  function toggleSW(i){
+    const sw = sws[i];
+    if(sw.running){
+      sw.running = false;
+      sw.elapsed += (Date.now()-sw.start)/1000;
+    }else{
+      sw.running = true;
+      sw.start = Date.now();
+    }
+    renderSW();
+  }
+
+  function resetSW(i){
+    sws[i].running = false;
+    sws[i].elapsed = 0;
+    renderSW();
+  }
+
+  function fmtSW(sec){
+    const m = Math.floor(sec/60);
+    const s = Math.floor(sec%60);
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function notify(msg){
+    const n = document.createElement('div');
+    n.className='notification';
+    n.textContent=msg;
+    document.body.appendChild(n);
+    setTimeout(()=>n.remove(),3000);
+  }
+
+  function drawTimeline(){
+    if(!tlCtx) return;
+    const range = parseInt($('tlRange').value);
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const pxPerMin = 5;
+    const width = range * pxPerMin;
+    timeline.width = width;
+    tlCtx.fillStyle = css('--face');
+    tlCtx.fillRect(0, 0, width, 120);
+    const startMin = nowMin - range/2;
+    for(let i=0; i<=range; i+=5){
+      const x = i * pxPerMin;
+      const isMajor = i%15===0;
+      tlCtx.strokeStyle = isMajor ? css('--tickMajor') : css('--tickMinor');
+      tlCtx.lineWidth = isMajor ? 2 : 1;
+      tlCtx.beginPath();
+      tlCtx.moveTo(x, 0);
+      tlCtx.lineTo(x, isMajor?30:20);
+      tlCtx.stroke();
+      if(isMajor){
+        tlCtx.fillStyle = css('--muted');
+        tlCtx.font = '11px sans-serif';
+        tlCtx.textAlign = 'center';
+        const min = (startMin + i) % 1440;
+        const h = Math.floor(min/60);
+        const m = min%60;
+        tlCtx.fillText(`${h}:${String(m).padStart(2,'0')}`, x, 45);
+      }
+    }
+    const mode = $('mode').value;
+    events.forEach(ev => {
+      if(ev.mode !== mode) return;
+      let evStart = ev.start;
+      let evEnd = ev.end;
+      if(mode === 'day'){
+        const currentHour = now.getHours();
+        if(currentHour >= 12){
+          evStart += 720;
+          evEnd += 720;
+        }
+      }
+      if(evEnd < evStart){
+        evEnd += (mode==='day'?720:60);
+      }
+      const x1 = (evStart - startMin) * pxPerMin;
+      const x2 = (evEnd - startMin) * pxPerMin;
+      if(x2 >= 0 && x1 <= width){
+        const startX = Math.max(0, x1);
+        const endX = Math.min(width, x2);
+        tlCtx.fillStyle = ev.color;
+        tlCtx.globalAlpha = 0.8;
+        tlCtx.fillRect(startX, 60, endX-startX, 35);
+        tlCtx.globalAlpha = 1;
+        tlCtx.fillStyle = '#fff';
+        tlCtx.font = 'bold 11px sans-serif';
+        tlCtx.textAlign = 'left';
+        const labelWidth = tlCtx.measureText(ev.label).width;
+        if(endX-startX > labelWidth + 8){
+          tlCtx.fillText(ev.label, startX+4, 82);
+        }
+      }
+    });
+    timers.forEach(t=>{
+      if(t.total===0 || t.clockMode!=='direct') return;
+      const remainMin = t.remain/60;
+      const startTimerMin = t.startMin || 0;
+      const endTimerMin = startTimerMin + remainMin;
+      const x1 = (startTimerMin - startMin) * pxPerMin;
+      const x2 = (endTimerMin - startMin) * pxPerMin;
+      if(x2 >= 0 && x1 <= width){
+        const startX = Math.max(0, x1);
+        const endX = Math.min(width, x2);
+        tlCtx.fillStyle = t.gaugeColor || '#ff6b6b';
+        tlCtx.globalAlpha = 0.7;
+        tlCtx.fillRect(startX, 100, endX-startX, 20);
+        tlCtx.globalAlpha = 1;
+        tlCtx.fillStyle = '#fff';
+        tlCtx.font = 'bold 10px sans-serif';
+        tlCtx.textAlign = 'left';
+        tlCtx.fillText('⏲️', startX+2, 113);
+      }
+    });
+    const cursorX = (range/2) * pxPerMin;
+    tlCtx.strokeStyle = css('--handS');
+    tlCtx.lineWidth = 3;
+    tlCtx.beginPath();
+    tlCtx.moveTo(cursorX, 0);
+    tlCtx.lineTo(cursorX, 120);
+    tlCtx.stroke();
+    tlWrap.scrollLeft = cursorX - tlWrap.clientWidth/2;
+    const auto = parseInt($('tlAuto').value);
+    if(auto > 0){
+      if(tlAnim) clearTimeout(tlAnim);
+      tlAnim = setTimeout(drawTimeline, 5000);
+    }
+  }
+
+  function generateStudy(){
+    const total = parseInt($('studyTotal').value);
+    const perPage = parseInt($('studyPerPage').value);
+    study.total = total;
+    study.perPage = perPage;
+    study.completed = [];
+    study.active = true;
+    study.delayCheck = {};
+    localStorage.study = JSON.stringify(study);
+    pushUndo();
+    events = events.filter(e => !e.isStudy);
+    const now = new Date();
+    const mode = $('mode').value;
+    let startMin = mode === 'day' ? (now.getHours()%12)*60 + now.getMinutes() : now.getMinutes();
+    startMin = Math.ceil(startMin);
+    const pomoBreaks = getPomoBreakRanges();
+    for(let i=0; i<total; i++){
+      const dur = perPage;
+      const color = studyColors[i % studyColors.length];
+      let canPlace = false;
+      let attempts = 0;
+      let pageStart, pageEnd;
+      let isNextHourFlag = false;
+      
+      while(!canPlace && attempts < 200){
+        canPlace = true;
+        let testStart = startMin + (attempts * 5);
+        let testEnd = testStart + dur;
+        
+        // 60分表記で60分を超えた場合は次の時間帯
+        if(mode === 'hour' && testStart >= 60){
+          isNextHourFlag = true;
+        }
+        
+        if(mode === 'hour'){
+          testStart = testStart % 60;
+          testEnd = testEnd % 60;
+        }else{
+          testStart = testStart % 720;
+          testEnd = testEnd % 720;
+        }
+        let conflicted = false;
+        for(let br of pomoBreaks){
+          if((testStart >= br.start && testStart < br.end) || 
+             (testEnd > br.start && testEnd <= br.end) ||
+             (testStart <= br.start && testEnd >= br.end)){
+            conflicted = true;
+            break;
+          }
+        }
+        if(!conflicted){
+          pageStart = testStart;
+          pageEnd = testEnd;
+          canPlace = true;
+        }else{
+          attempts++;
+        }
+      }
+      const eventId = Date.now() + i;
+      
+      events.push({
+        mode: mode,
+        start: pageStart,
+        end: pageEnd,
+        label: `ワーク p.${i+1}`,
+        color: color,
+        isStudy: true,
+        pageNum: i,
+        id: eventId,
+        isNextHour: isNextHourFlag
+      });
+      study.delayCheck[i] = {
+        originalEnd: pageEnd,
+        hasDelayed: false
+      };
+      startMin += dur;
+    }
+    save();
+    draw();
+    updateStudyStats();
+    updateHPBar();
+    $('hpBarContainer').classList.add('active');
+    $('pageCompleteBtn').classList.add('active');
+    notify('📚 ワーク予定を生成しました');
+  }
+
+  function getPomoBreakRanges(){
+    const mode = $('mode').value;
+    const ranges = [];
+    events.forEach(ev=>{
+      if(ev.isBreak && ev.mode === mode){
+        ranges.push({start: ev.start, end: ev.end});
+      }
+    });
+    return ranges;
+  }
+
+  function completeStudyPage(pageNum){
+    if(study.completed.includes(pageNum)){
+      study.completed = study.completed.filter(p=>p!==pageNum);
+    }else{
+      study.completed.push(pageNum);
+      animateHPDecrease();
+    }
+    localStorage.study = JSON.stringify(study);
+    updateStudyStats();
+    updateHPBar();
+    const remaining = study.total - study.completed.length;
+    if(remaining === 0){
+      notify('🎉 全ページ完了おめでとうございます!');
+      study.active = false;
+      localStorage.study = JSON.stringify(study);
+      $('hpBarContainer').classList.remove('active');
+      $('pageCompleteBtn').classList.remove('active');
+    }else{
+      notify(`✅ 残り${remaining}ページ`);
+    }
+    reconstructStudySchedule();
+  }
+
+  function completeNextPage(){
+    const nextPage = study.completed.length;
+    if(nextPage < study.total){
+      completeStudyPage(nextPage);
+    }
+  }
+
+  function reconstructStudySchedule(){
+    const mode = $('mode').value;
+    const now = new Date();
+    let currentMin = mode === 'day' ? (now.getHours()%12)*60 + now.getMinutes() : now.getMinutes();
+    currentMin = Math.ceil(currentMin);
+    pushUndo();
+    const remainingPages = [];
+    for(let i=0; i<study.total; i++){
+      if(!study.completed.includes(i)){
+        remainingPages.push(i);
+      }
+    }
+    events = events.filter(e => !e.isStudy);
+    let startMin = currentMin;
+    const pomoBreaks = getPomoBreakRanges();
+    remainingPages.forEach((pageNum, idx)=>{
+      const dur = study.perPage;
+      const color = studyColors[pageNum % studyColors.length];
+      let canPlace = false;
+      let attempts = 0;
+      let pageStart, pageEnd;
+      let isNextHourFlag = false;
+      
+      while(!canPlace && attempts < 200){
+        let testStart = startMin + (attempts * 5);
+        let testEnd = testStart + dur;
+        
+        // 60分表記で60分を超えた場合は次の時間帯
+        if(mode === 'hour' && testStart >= 60){
+          isNextHourFlag = true;
+        }
+        
+        if(mode === 'hour'){
+          testStart = testStart % 60;
+          testEnd = testEnd % 60;
+        }else{
+          testStart = testStart % 720;
+          testEnd = testEnd % 720;
+        }
+        let conflicted = false;
+        for(let br of pomoBreaks){
+          if((testStart >= br.start && testStart < br.end) || 
+             (testEnd > br.start && testEnd <= br.end) ||
+             (testStart <= br.start && testEnd >= br.end)){
+            conflicted = true;
+            break;
+          }
+        }
+        if(!conflicted){
+          pageStart = testStart;
+          pageEnd = testEnd;
+          canPlace = true;
+        }else{
+          attempts++;
+        }
+      }
+      const eventId = Date.now() + idx;
+      
+      events.push({
+        mode: mode,
+        start: pageStart,
+        end: pageEnd,
+        label: `ワーク p.${pageNum+1}`,
+        color: color,
+        isStudy: true,
+        pageNum: pageNum,
+        id: eventId,
+        isNextHour: isNextHourFlag
+      });
+      if(!study.delayCheck[pageNum]){
+        study.delayCheck[pageNum] = {
+          originalEnd: pageEnd,
+          hasDelayed: false
+        };
+      }
+      startMin += dur;
+    });
+    save();
+    draw();
+  }
+
+  function checkStudyDelay(){
+    if(!study.active) return;
+    const mode = $('mode').value;
+    const now = new Date();
+    const currentMin = mode === 'day' ? (now.getHours()%12)*60 + now.getMinutes() : now.getMinutes();
+    
+    events.forEach(ev => {
+      if(!ev.isStudy || study.completed.includes(ev.pageNum)) return;
+      
+      const delayInfo = study.delayCheck[ev.pageNum];
+      if(!delayInfo) return;
+      
+      if(currentMin > ev.end && !delayInfo.hasDelayed){
+        delayInfo.hasDelayed = true;
+        
+        const originalDuration = delayInfo.originalEnd - ev.start;
+        const newEnd = ev.end + 2;
+        ev.end = newEnd;
+        
+        const laterPages = events.filter(e => 
+          e.isStudy && 
+          e.pageNum > ev.pageNum && 
+          !study.completed.includes(e.pageNum)
+        );
+        
+        laterPages.forEach(laterEv => {
+          laterEv.start = laterEv.start + 2;
+          laterEv.end = laterEv.end + 2;
+        });
+        
+        localStorage.study = JSON.stringify(study);
+        save();
+        draw();
+      }
+    });
+  }
+
+  function updateStudyStats(){
+    $('studyTotal').value = study.total;
+    $('studyPerPage').value = study.perPage;
+    $('statTotal').textContent = study.total;
+    $('statRemain').textContent = study.total - study.completed.length;
+    const progress = study.total > 0 ? Math.round((study.completed.length/study.total)*100) : 0;
+    $('statProgress').textContent = progress + '%';
+    const remainTime = (study.total - study.completed.length) * study.perPage;
+    $('statTime').textContent = remainTime + '分';
+    const log = $('studyLog');
+    log.innerHTML = '';
+    for(let i=0; i<study.total; i++){
+      const item = document.createElement('div');
+      item.className = 'page-btn';
+      if(study.completed.includes(i)){
+        item.classList.add('completed');
+      }
+      const icon = document.createElement('div');
+      icon.textContent = study.completed.includes(i) ? '✅' : '⬜';
+      icon.style.fontSize = '20px';
+      icon.style.marginBottom = '4px';
+      const txt = document.createElement('div');
+      txt.textContent = `p.${i+1}`;
+      txt.style.fontSize = '12px';
+      txt.style.fontWeight = '600';
+      item.appendChild(icon);
+      item.appendChild(txt);
+      item.onclick = ()=>completeStudyPage(i);
+      log.appendChild(item);
+    }
+    const completed = study.completed.length;
+    $('pageCompleteBtn').innerHTML = `📖 ページ完了 (${completed}/${study.total})`;
+    if(study.active){
+      $('hpBarContainer').classList.add('active');
+      $('pageCompleteBtn').classList.add('active');
+    }else{
+      $('hpBarContainer').classList.remove('active');
+      $('pageCompleteBtn').classList.remove('active');
+    }
+  }
+
+  function updateHPBar(){
+    if(!study.active) return;
+    const progress = study.total > 0 ? (study.completed.length / study.total) : 0;
+    const hpPercent = Math.max(0, (1 - progress) * 100);
+    $('hpBarFill').style.width = hpPercent + '%';
+    $('hpLabel').textContent = `HP: ${Math.round(hpPercent)}%`;
+  }
+
+  function animateHPDecrease(){
+    const container = $('hpBarContainer');
+    const afterglow = $('hpAfterGlow');
+    const fill = $('hpBarFill');
+    const currentWidth = parseFloat(fill.style.width);
+    afterglow.style.width = currentWidth + '%';
+    afterglow.style.opacity = '0.6';
+    container.classList.add('hit');
+    setTimeout(()=>{
+      afterglow.style.opacity = '0';
+      container.classList.remove('hit');
+    }, 400);
+  }
+})();
+</script>
+</body>
+</html>
