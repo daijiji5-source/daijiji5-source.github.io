@@ -3,73 +3,120 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>必要ニュース日報</title>
-<meta name="description" content="重要ニュースを見出しで一覧し、タップすると解説が開きます。">
+<title>コロ助の必要ニュース</title>
+<meta name="description" content="朝は見出しだけ。気になったニュースだけ開けば、コロ助が要点を説明します。">
 <style>
-:root{color-scheme:light dark;--bg:#f6f6f7;--card:#fff;--text:#18181b;--muted:#6b7280;--line:#e5e7eb;--high:#b42318;--mid:#9a6700}
-@media(prefers-color-scheme:dark){:root{--bg:#111214;--card:#1b1d20;--text:#f4f4f5;--muted:#a1a1aa;--line:#303238;--high:#ff8a80;--mid:#ffd166}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif;line-height:1.65}
-main{max-width:760px;margin:auto;padding:22px 15px 64px}h1{font-size:23px;margin:0 0 3px}.meta{color:var(--muted);font-size:13px;margin:0 0 18px}
-details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:11px 0;overflow:hidden}
-summary{cursor:pointer;list-style:none;padding:17px 45px 17px 17px;font-size:17px;font-weight:760;line-height:1.48;position:relative}
-summary::-webkit-details-marker{display:none}summary:after{content:"＋";position:absolute;right:16px;top:16px;font-size:22px;font-weight:400;color:var(--muted)}
-details[open] summary:after{content:"−"}.body{border-top:1px solid var(--line);padding:16px 17px 19px}.body p{margin:0 0 13px}.body p:last-child{margin-bottom:0}
-.tag{font-size:12px;font-weight:850;margin-right:7px}.high{color:var(--high)}.mid{color:var(--mid)}.source{font-size:13px;color:var(--muted)}
-a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}.note{font-size:12px;color:var(--muted);margin-top:20px}
+:root{
+  color-scheme:light dark;
+  --bg:#f4f1e9;--card:#fffdf8;--text:#202124;--muted:#716d64;--line:#e6dfcf;
+  --accent:#d89b1d;--accent-soft:#fff1be;--high:#a83a2a;--mid:#8a6517;--chip:#f3ecdd;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#151514;--card:#201f1c;--text:#f5f3ed;--muted:#aaa59a;--line:#39362e;
+  --accent:#f1b83f;--accent-soft:#3d3117;--high:#ff9b8e;--mid:#ffd36b;--chip:#2a2823}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif;line-height:1.72}
+main{max-width:760px;margin:auto;padding:20px 14px 64px}
+.hero{padding:5px 3px 13px}
+.eyebrow{display:inline-block;background:var(--accent);color:#1f1708;font-size:12px;font-weight:900;padding:4px 9px;border-radius:999px;margin-bottom:8px}
+h1{font-size:25px;line-height:1.25;margin:0 0 5px;letter-spacing:.01em}
+.lead{font-size:14px;color:var(--muted);margin:0 0 5px}
+.meta{color:var(--muted);font-size:12px;margin:0}
+details{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:11px 0;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+summary{cursor:pointer;list-style:none;padding:16px 46px 16px 16px;font-size:17px;font-weight:800;line-height:1.48;position:relative}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"＋";position:absolute;right:16px;top:14px;font-size:23px;font-weight:400;color:var(--muted)}
+details[open] summary:after{content:"−"}
+details[open] summary{background:linear-gradient(180deg,var(--card),transparent)}
+.chip{display:inline-block;font-size:11px;font-weight:850;letter-spacing:.02em;background:var(--chip);color:var(--muted);padding:3px 7px;border-radius:999px;margin-right:7px;vertical-align:2px}
+.chip.high{color:var(--high)}.chip.mid{color:var(--mid)}
+.body{border-top:1px solid var(--line);padding:15px 16px 19px}
+.koro{background:var(--accent-soft);border-radius:12px;padding:12px 13px;margin:0 0 15px;font-size:15px;line-height:1.65}
+.koro b{font-weight:900}
+h2{font-size:14px;margin:17px 0 6px;letter-spacing:.01em}
+.body p{margin:0 0 11px}
+.source{font-size:12px;color:var(--muted);margin-top:15px!important}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
+.footer{font-size:12px;color:var(--muted);padding:12px 3px 0}
+@media(max-width:420px){main{padding-left:11px;padding-right:11px}summary{font-size:16px}.body{font-size:15px}}
 </style>
 </head>
 <body><main>
-<h1>必要ニュース日報</h1>
-<p class="meta">2026年11月12日 09:28 JST｜11月11日〜12日朝｜重要なものだけ</p>
+<header class="hero">
+  <span class="eyebrow">朝これだけ見とけばOK</span>
+  <h1>コロ助の必要ニュース</h1>
+  <p class="lead">見出しだけ眺めて、気になったやつだけ開けばよい。</p>
+  <p class="meta">2026年11月12日 09:28 JST｜11月11日〜12日朝｜5本</p>
+</header>
 
 <details id="yen">
-<summary><span class="tag high">高</span>円が1ドル160円目前。企業物価は7.1％上昇し、輸入コスト圧力が再び強まる</summary>
+<summary><span class="chip high">お金・高</span>円、160円目前。輸入コストがまた重くなる</summary>
 <div class="body">
-<p><strong>11月12日朝の外国為替市場で円は1ドル159円台後半まで下落し、160円が目前になりました。同日の日銀統計では、10月の企業物価指数が前年同月比7.1％上昇し、9月の6.8％から加速しています。</strong></p>
-<p>企業物価は、企業同士で取引されるモノの価格です。さらに円ベースの輸入物価は前年同月比24.8％上昇しており、円安が原材料・燃料などの仕入れコストを押し上げています。米国では強いインフレ指標を受けて追加利上げ観測が高まり、日米金利差が円売り・ドル買いにつながっています。</p>
-<p><strong>仕事への意味：</strong> 海外から仕入れる企業は、数量が同じでも円換算の支払額が増える可能性があります。日銀の次回会合は12月17〜18日。今回の企業物価は追加利上げを後押しする材料ですが、利上げ自体はまだ決定していません。</p>
+<div class="koro"><b>コロ助メモ：</b> 円安と仕入れ価格上昇が同時に進んでいる。海外からモノを買う企業には、かなり嫌な組み合わせ。</div>
+<h2>どういう話？</h2>
+<p>11月12日朝、円は1ドル159円台後半まで下落。同日の日銀統計では、10月の企業物価指数が前年同月比7.1％上昇し、9月の6.8％から加速した。</p>
+<h2>で、何が変わった？</h2>
+<p>円ベースの輸入物価は前年同月比24.8％上昇。つまり、海外から買う原材料や燃料は「現地価格」だけでなく「円安」でも高くなっている。米国では追加利上げ観測が強まり、日米金利差が円売りにつながっている。</p>
+<h2>俺にどう関係する？</h2>
+<p>輸入品・海外サービス・海外送金がある企業は、同じ数量でも円での支払額が増えやすい。日銀の次回会合は12月17〜18日。今回の数字は利上げ材料にはなるが、利上げ決定ではない。</p>
 <p class="source">出典：<a href="https://www.reuters.com/world/asia-pacific/japan-wholesale-inflation-accelerates-keeps-alive-boj-rate-hike-view-2026-11-12/">Reuters 11月12日：企業物価</a>／<a href="https://www.reuters.com/world/asia-pacific/dollar-near-one-month-high-yen-edges-toward-160-2026-11-12/">Reuters 11月12日：為替</a></p>
 </div>
 </details>
 
 <details id="mappa">
-<summary><span class="tag high">高</span>サイバーエージェントがMAPPA親会社へ出資。制作力と配信・広告・ゲームを資本面でも結ぶ</summary>
+<summary><span class="chip high">アニメ・高</span>サイバーエージェント×MAPPA。資本でもつながる</summary>
 <div class="body">
-<p><strong>サイバーエージェントは11月11日、アニメ制作会社MAPPAと業務提携し、MAPPAの親会社MHDの株式の一部を取得したと発表しました。</strong> MAPPAは『呪術廻戦』『チェンソーマン』などを手がけ、サイバーエージェントはABEMA、ゲーム、広告、海外マーケティングなどを持っています。</p>
-<p><strong>Before → After：</strong> これまでも作品単位で協業していましたが、今回は業務提携に加えてMHDへの出資が入り、より継続的な関係になります。ただし、サイバーエージェントがMAPPAの経営支配権を取得したとの発表ではありません。取得比率・金額、株式が新株なのか既存株主からの取得なのかも公表資料では確認できません。</p>
-<p><strong>コンテンツ業界への意味：</strong> 制作スタジオ単体ではなく、企画・制作から配信、広告、ゲーム、海外展開までを一体で回す体制が強まっています。制作費だけでなく、IPの権利、海外販売、二次利用から誰が利益を得るかという構造が今後さらに重要になります。</p>
+<div class="koro"><b>コロ助メモ：</b> 「アニメを作る会社」と「配信・広告・ゲームを持つ会社」が、作品ごとの協業より一段深く組む話。</div>
+<h2>どういう話？</h2>
+<p>サイバーエージェントは11月11日、アニメ制作会社MAPPAと業務提携し、MAPPAの親会社MHDの株式の一部を取得したと発表した。</p>
+<h2>で、何が変わった？</h2>
+<p><b>Before：</b> 作品単位の協業。<br><b>After：</b> 業務提携＋親会社への出資で、継続的な関係へ。ただし、サイバーエージェントがMAPPAの経営支配権を取得したわけではない。取得比率・金額、新株か既存株の取得かも公表されていない。</p>
+<h2>俺にどう関係する？</h2>
+<p>アニメは制作だけでなく、配信、広告、ゲーム、海外販売まで含めて稼ぐ構造になっている。どこがIPを持ち、どこが二次利用の利益を取るのかを見ると、この提携の意味が分かりやすい。</p>
 <p class="source">出典：<a href="https://www.cyberagent.co.jp/news/detail/id=34003">サイバーエージェント 11月11日公式発表</a></p>
 </div>
 </details>
 
 <details id="eneos">
-<summary><span class="tag high">高</span>ENEOSが再エネで1,118億円減損。一方で石油高により純利益予想は2,000億円上方修正</summary>
+<summary><span class="chip high">企業・高</span>ENEOS、再エネで1,118億円減損。でも利益予想は上方修正</summary>
 <div class="body">
-<p><strong>ENEOSホールディングスは11月11日、再生可能エネルギー事業で1,118億円の減損損失を計上する一方、2027年3月期の純利益予想を4,150億円から6,150億円へ引き上げました。</strong></p>
-<p>減損の主因は、2022年に買収したジャパン・リニューアブル・エナジーに関するのれん等の価値見直しです。開発コストや金利上昇などを踏まえて投資方針を見直しました。一方、原油価格上昇や石油製品の海外市況改善が利益を押し上げるため、会社全体では上方修正となっています。</p>
-<p><strong>意味：</strong> 「脱炭素投資が全部失敗した」という話ではありませんが、再エネ案件の採算基準が厳しくなっていることは明確です。同時に、現在の高いエネルギー価格が従来型の石油事業の利益を増やしているため、エネルギー転換が一直線ではないことを示す決算です。</p>
+<div class="koro"><b>コロ助メモ：</b> 再エネでは大きな損失。一方、石油高では儲かる。エネルギー転換が一直線ではないことが、数字に出た。</div>
+<h2>どういう話？</h2>
+<p>ENEOSホールディングスは11月11日、再生可能エネルギー事業で1,118億円の減損損失を計上する一方、2027年3月期の純利益予想を4,150億円から6,150億円へ引き上げた。</p>
+<h2>で、何が変わった？</h2>
+<p>減損の主因は、2022年に買収したジャパン・リニューアブル・エナジーに関するのれん等の価値見直し。開発コストや金利上昇を踏まえ、再エネ投資の採算を厳しく見直した。一方、原油高と石油製品市況の改善が会社全体の利益を押し上げる。</p>
+<h2>俺にどう関係する？</h2>
+<p>「再エネが終わった」という話ではない。投資案件の採算ラインが厳しくなった一方で、従来型エネルギーが短期利益を支えている。大型投資を見るときは、成長テーマだけでなく金利と資本コストも重要。</p>
 <p class="source">出典：<a href="https://www.newsweekjapan.jp/articles/-/339763">Reuters配信 11月11日</a></p>
 </div>
 </details>
 
 <details id="ukraine">
-<summary><span class="tag high">高</span>ロシア・ウクライナが大規模捕虜交換で原則合意。ただし停戦の核心部分は進展なし</summary>
+<summary><span class="chip high">世界・高</span>露・ウクライナ、捕虜交換は前進。停戦はまだ遠い</summary>
 <div class="body">
-<p><strong>米国が仲介した11月10〜11日のアブダビ協議で、ロシアとウクライナは大規模な捕虜交換について原則合意しました。</strong> 交換人数や実施時期はまだ確定していませんが、人道分野では具体的な前進です。</p>
-<p>一方、戦争終結に直結する領土問題では隔たりが残っています。ロシアはドンバス全域を要求し、ウクライナは領土放棄を拒否。欧州を今後の交渉にどこまで関与させるかでも意見が一致していません。協議中も双方の攻撃は続いています。</p>
-<p><strong>今回の位置づけ：</strong> 「和平合意に近づいた」という段階ではありません。捕虜交換という限定的な成果と、停戦・領土・安全保障という核心部分の停滞を分けて見る必要があります。</p>
+<div class="koro"><b>コロ助メモ：</b> 話し合いは進んだ。でも「戦争が終わりそう」とまでは言えない。成果は人道面に限られている。</div>
+<h2>どういう話？</h2>
+<p>米国が仲介した11月10〜11日のアブダビ協議で、ロシアとウクライナは大規模な捕虜交換について原則合意した。交換人数や実施時期はまだ確定していない。</p>
+<h2>で、何が変わった？</h2>
+<p>捕虜交換では前進したが、領土問題は動いていない。ロシアはドンバス全域を要求し、ウクライナは領土放棄を拒否。欧州を交渉にどこまで関与させるかでも一致していない。</p>
+<h2>俺にどう関係する？</h2>
+<p>和平期待だけで原油・物流・為替リスクが消えたと考えるのは早い。捕虜交換という限定的な成果と、停戦・領土・安全保障の停滞は分けて見る必要がある。</p>
 <p class="source">出典：<a href="https://www.reuters.com/world/europe/us-russia-ukraine-start-second-day-abu-dhabi-peace-talks-2026-11-11/">Reuters 11月11日</a></p>
 </div>
 </details>
 
 <details id="grant">
-<summary><span class="tag mid">本日締切</span>舞台芸術等総合支援事業は11月12日17時まで。公演創造・国際交流などが対象</summary>
+<summary><span class="chip mid">締切</span>本日17時まで。舞台芸術等総合支援事業</summary>
 <div class="body">
-<p><strong>2027年度の「舞台芸術等総合支援事業」は、本日11月12日17時が応募締切です。</strong> 公演創造活動は2027年4月1日〜2028年3月31日に国内で行う対象公演、国際芸術交流は同期間の対象活動が対象です。</p>
-<p>応募は専用の受付フォームから行い、募集ページ自体は提出先ではありません。公式案内は、Excel様式をMicrosoft Excel以外で作成すると自動計算等に不具合が出る可能性があるとも注意しています。</p>
+<div class="koro"><b>コロ助メモ：</b> これは「今日まで」。対象ならニュースとして読むより、先に申請状況を確認した方がよい。</div>
+<h2>どういう話？</h2>
+<p>2027年度の「舞台芸術等総合支援事業」は、本日11月12日17時が応募締切。公演創造活動は2027年4月1日〜2028年3月31日に国内で行う対象公演、国際芸術交流は同期間の対象活動が対象。</p>
+<h2>気をつける点</h2>
+<p>応募は専用受付フォームから行う。公式案内では、Excel様式をMicrosoft Excel以外で作ると自動計算等に不具合が出る可能性があるとしている。</p>
 <p class="source">出典：<a href="https://www.ntj.jac.go.jp/grant/program/applicant/04/">日本芸術文化振興会：公演創造活動</a>／<a href="https://www.ntj.jac.go.jp/grant/program/applicant/05/">国際芸術交流</a></p>
 </div>
 </details>
 
-<p class="note">見出しだけ確認し、気になる項目をタップすると解説が開きます。外部サイトへ移動するのは「出典」を押したときだけです。</p>
+<p class="footer">コロ助は、ニュースを増やすより「これは知っとけ」を選ぶ方を優先します。</p>
 </main></body></html>
